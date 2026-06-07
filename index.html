@@ -452,13 +452,7 @@
             border: 1px solid rgba(255,255,255,0.1);
             display: flex;
             align-items: center;
-            gap: 6px;
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-        }
-
-        .guide-badge::before {
-            content: "🛶";
-            font-size: 12px;
         }
 
         @keyframes popIn {
@@ -471,9 +465,6 @@
             color: #7f8c8d;
             box-shadow: none;
             border: none;
-        }
-        .guide-badge.empty::before {
-            content: "💤";
         }
 
         /* メモセクション */
@@ -924,17 +915,21 @@
                 dateSelect.appendChild(option);
             });
 
-            // 2. クイック日付選択（直近の日付や、現在日付に近い7日間をピックアップ）
+            // 2. クイック日付選択（直近の未来のスケジュール6日間を表示）
             quickDates.innerHTML = "";
             
-            // 直近の日付をいくつかピックアップ（最大7日）
-            // 今日以降の日付を優先するが、なければ最新の7日間を表示
-            const todayStr = getTodayString();
-            let displayDates = allDates.filter(d => d >= todayStr).slice(0, 7);
+            // ブラウザを見た日（今日）以降のスケジュールを6個抽出して表示
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // 比較のために時間をクリア
             
-            // 未来の日付が少ない場合は過去の日付も含めて7日間を確保
-            if (displayDates.length < 5) {
-                displayDates = allDates.slice(-7);
+            let displayDates = allDates.filter(d => {
+                const dateObj = parseToDate(d);
+                return dateObj && dateObj >= today;
+            }).slice(0, 6);
+            
+            // もし未来の日付が1つもない（すべて過去のスケジュール）場合は、リストの最後（最新）から6個を表示
+            if (displayDates.length === 0) {
+                displayDates = allDates.slice(-6);
             }
 
             displayDates.forEach(date => {
