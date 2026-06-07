@@ -467,6 +467,19 @@
             border: none;
         }
 
+        .guide-badge.leader {
+            background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
+            color: var(--color-earth-brown);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 12px rgba(212, 163, 115, 0.3);
+            font-weight: 800;
+        }
+
+        .leader-icon {
+            margin-right: 4px;
+            font-size: 14px;
+        }
+
         /* メモセクション */
         .memo-section {
             display: flex;
@@ -845,6 +858,19 @@
                 }
             });
 
+            // 運営リーダー列を特定
+            let leaderIdx = -1;
+            for (let i = 0; i < headers.length; i++) {
+                const h = headers[i].trim();
+                if (h.includes("運営リーダー") || h.includes("リーダー")) {
+                    leaderIdx = i;
+                    break;
+                }
+            }
+            if (leaderIdx === -1) {
+                leaderIdx = 19; // デフォルトはT列（20列目、0-indexedで19）
+            }
+
             // メモ列を特定
             let memoIdx = -1;
             for (let i = 0; i < headers.length; i++) {
@@ -872,6 +898,7 @@
                 const studentsVal = row[studentsIdx] ? row[studentsIdx].trim() : "";
                 const teachersVal = row[teachersIdx] ? row[teachersIdx].trim() : "";
                 const memoVal = row[memoIdx] ? row[memoIdx].trim() : "";
+                const leaderVal = row[leaderIdx] ? row[leaderIdx].trim() : "";
 
                 // 出席者（○やOなどがついているメンバー）
                 const attendees = [];
@@ -895,6 +922,7 @@
                     students: studentsVal,
                     teachers: teachersVal,
                     attendees: attendees,
+                    leader: leaderVal,
                     memo: memoVal
                 });
             }
@@ -1049,8 +1077,23 @@
 
             // ガイドバッジの生成
             let guidesHtml = "";
-            if (event.attendees && event.attendees.length > 0) {
-                guidesHtml = event.attendees.map(name => `<span class="guide-badge">${name}</span>`).join('');
+            let attendeesList = [...(event.attendees || [])];
+            const leaderName = event.leader ? event.leader.trim() : "";
+
+            if (leaderName) {
+                // 出席メンバーからリーダーを除去
+                attendeesList = attendeesList.filter(name => name !== leaderName);
+                // 先頭にリーダーを追加
+                attendeesList.unshift(leaderName);
+            }
+
+            if (attendeesList.length > 0) {
+                guidesHtml = attendeesList.map(name => {
+                    if (name === leaderName) {
+                        return `<span class="guide-badge leader"><span class="leader-icon">👑</span>${name}</span>`;
+                    }
+                    return `<span class="guide-badge">${name}</span>`;
+                }).join('');
             } else {
                 guidesHtml = `<span class="guide-badge empty">出席ガイドなし</span>`;
             }
