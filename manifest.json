@@ -13,7 +13,7 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": "/",
+  "start_url": "/gv-schedule/",
   "background_color": "#2c3e2e",
   "theme_color": "#4a7c59",
   "display": "standalone",
