@@ -670,8 +670,8 @@
         const SHEET_NAME = "2026年";
         const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
 
-        // 出席者名（ガイド）定義
-        const ATTENDEES = ["哲さん", "英さん", "羽山さん", "Rez", "バボちゃん", "五島", "FW（どんどん）", "FW（ゆげっち）"];
+        // 出席者名（ガイド）定義 (スプレッドシートから動的抽出されるため初期値は空)
+        let ATTENDEES = [];
 
         // アプリの状態
         let allEvents = [];
@@ -823,40 +823,39 @@
                 else if (header.includes("教員") || header.includes("引率") || header.includes("先生")) teachersIdx = i;
             }
 
-            // 各ガイドがどの列にいるかを動的にマッピング
+            // --- ガイド列のインデックス範囲を動的に検出 ---
+            let startIdx = -1;
+            for (let i = 0; i < headers.length; i++) {
+                if (headers[i].includes("必要艇数")) {
+                    startIdx = i + 1;
+                    break;
+                }
+            }
+            if (startIdx === -1) {
+                startIdx = teachersIdx + 2; // フォールバック
+            }
+
+            let endIdx = -1;
+            for (let i = 0; i < headers.length; i++) {
+                if (headers[i].includes("必要ガイド")) {
+                    endIdx = i;
+                    break;
+                }
+            }
+            if (endIdx === -1) {
+                endIdx = headers.length - 8; // フォールバック
+            }
+
+            // ガイド名（出席者）のリストをヘッダーから動的に抽出
+            ATTENDEES = [];
             const guideCols = {};
-            
-            // 実際のCSVにおけるガイドの正しい並び順（インデックス8から）
-            const defaultGuideOrder = [
-                { name: "哲さん", defaultIdx: 8 },
-                { name: "羽山さん", defaultIdx: 9 },
-                { name: "英さん", defaultIdx: 10 },
-                { name: "Rez", defaultIdx: 11 },
-                { name: "バボちゃん", defaultIdx: 12 },
-                { name: "五島", defaultIdx: 13 },
-                { name: "FW（どんどん）", defaultIdx: 14 },
-                { name: "FW（ゆげっち）", defaultIdx: 15 }
-            ];
-
-            // 1. ヘッダー名から動的に一致する列を探す
-            ATTENDEES.forEach(name => {
-                const cleanName = name.replace("さん", "").replace(/（.*）/, "").trim();
-                const idx = headers.findIndex(h => {
-                    const cleanH = h.trim();
-                    if (!cleanH) return false;
-                    return cleanH.includes(cleanName) || cleanName.includes(cleanH);
-                });
-                if (idx !== -1) {
-                    guideCols[name] = idx;
+            for (let i = startIdx; i < endIdx; i++) {
+                if (i < headers.length && headers[i] && headers[i].trim()) {
+                    const name = headers[i].trim();
+                    ATTENDEES.push(name);
+                    guideCols[name] = i;
                 }
-            });
-
-            // 2. 見つからなかったガイドについて、実際のCSVの並び順（デフォルト位置）を適用
-            defaultGuideOrder.forEach(item => {
-                if (guideCols[item.name] === undefined) {
-                    guideCols[item.name] = item.defaultIdx;
-                }
-            });
+            }
 
             // 運営リーダー列を特定
             let leaderIdx = -1;
@@ -908,7 +907,7 @@
                         const cellVal = row[colIdx].trim();
                         // 大文字Oや○のほかに、トリムされた値が空欄でなく、不参加記号(×,-,~など)でもない場合も考慮する
                         const isAbsent = ["×", "x", "X", "-", "ー", "~", "―"].includes(cellVal) || cellVal === "";
-                        const isPresent = ["○", "〇", "o", "O", "1", "OK", "出席", "ok"].includes(cellVal) || (!isAbsent);
+                        const isPresent = ["○", "〇", "o", "O", "1", "OK", "出席", "ok", "確定"].includes(cellVal) || (!isAbsent);
                         if (isPresent) {
                             attendees.push(name);
                         }
